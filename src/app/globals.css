@@ -1,3 +1,4 @@
+/* eslint-disable */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -86,9 +87,10 @@ body {
 
 @layer base {
   * {
-    @apply border-border;
+    border: var(--border); /* Replace @apply with direct CSS */
   }
   body {
-    @apply bg-background text-foreground;
+    background: var(--background); /* Replace @apply with direct CSS */
+    color: var(--foreground); /* Replace @apply with direct CSS */
   }
 }

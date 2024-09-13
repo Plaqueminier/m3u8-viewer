@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const searchParams = request.nextUrl.searchParams;
@@ -36,7 +37,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         })
         .sort((a, b) => b.name.localeCompare(a.name)) || [];
 
-    return NextResponse.json({ videos });
+    const previewPresignedUrls = await Promise.all(
+      videos.map(async (video) => {
+        const previewKey = `previews/${video.key.slice(video.key.indexOf("/") + 1, video.key.lastIndexOf("."))}/segment_01.mp4`;
+        const command = new GetObjectCommand({
+          Bucket: process.env.R2_BUCKET,
+          Key: previewKey,
+        });
+        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        return { ...video, previewPresignedUrl: presignedUrl };
+      })
+    );
+
+    return NextResponse.json({ videos: previewPresignedUrls });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("Error listing videos:", error);

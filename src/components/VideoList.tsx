@@ -6,6 +6,7 @@ export interface Video extends Element {
   name: string;
   key: string;
   size: number;
+  previewPresignedUrl: string;
 }
 
 interface VideoListProps {
@@ -49,7 +50,7 @@ export const VideoList: React.FC<VideoListProps> = ({
         <ElementCard
           key={video.key}
           name={video.name}
-          videoKey={video.key}
+          previewUrl={video.previewPresignedUrl}
           onClick={() => onVideoClick(video)}
         />
       ))}
