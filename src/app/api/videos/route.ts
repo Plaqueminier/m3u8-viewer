@@ -39,13 +39,36 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const previewPresignedUrls = await Promise.all(
       videos.map(async (video) => {
-        const previewKey = `previews/${video.key.slice(video.key.indexOf("/") + 1, video.key.lastIndexOf("."))}/segment_01.mp4`;
-        const command = new GetObjectCommand({
+        const previewKey = `previews/${video.key.slice(
+          video.key.indexOf("/") + 1,
+          video.key.lastIndexOf(".")
+        )}/segment_01.mp4`;
+        const previewCommand = new GetObjectCommand({
           Bucket: process.env.R2_BUCKET,
           Key: previewKey,
         });
-        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-        return { ...video, previewPresignedUrl: presignedUrl };
+        const previewPresignedUrl = await getSignedUrl(
+          s3Client,
+          previewCommand,
+          { expiresIn: 3600 }
+        );
+
+        // Generate presigned URL for the full video
+        const fullVideoCommand = new GetObjectCommand({
+          Bucket: process.env.R2_BUCKET,
+          Key: video.key,
+        });
+        const fullVideoPresignedUrl = await getSignedUrl(
+          s3Client,
+          fullVideoCommand,
+          { expiresIn: 3600 }
+        );
+
+        return {
+          ...video,
+          previewPresignedUrl,
+          fullVideoPresignedUrl,
+        };
       })
     );
 

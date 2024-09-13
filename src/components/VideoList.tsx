@@ -7,6 +7,7 @@ export interface Video extends Element {
   key: string;
   size: number;
   previewPresignedUrl: string;
+  fullVideoPresignedUrl: string;
 }
 
 interface VideoListProps {
@@ -51,6 +52,7 @@ export const VideoList: React.FC<VideoListProps> = ({
           key={video.key}
           name={video.name}
           previewUrl={video.previewPresignedUrl}
+          fullVideoUrl={video.fullVideoPresignedUrl}
           onClick={() => onVideoClick(video)}
         />
       ))}

@@ -1,15 +1,24 @@
 import { useState, useRef } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface ElementCardProps {
   name: string;
   previewUrl?: string;
+  fullVideoUrl?: string;
   onClick?: () => void;
 }
 
 export const ElementCard: React.FC<ElementCardProps> = ({
   name,
   previewUrl,
+  fullVideoUrl,
   onClick,
 }) => {
   const [_, setIsHovered] = useState(false);
@@ -24,6 +33,19 @@ export const ElementCard: React.FC<ElementCardProps> = ({
 
   const handleMouseLeave = (): void => {
     setIsHovered(false);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
+  const handleFullVideoClick = (
+    e: React.MouseEvent<HTMLButtonElement>
+  ): void => {
+    e.stopPropagation();
+    if (fullVideoUrl) {
+      window.open(fullVideoUrl, "_blank");
+    }
   };
 
   return (
@@ -47,6 +69,13 @@ export const ElementCard: React.FC<ElementCardProps> = ({
             className="w-full h-32 object-cover"
           />
         </CardContent>
+      )}
+      {fullVideoUrl && (
+        <CardFooter>
+          <Button onClick={handleFullVideoClick} className="w-full">
+            Open Full Video
+          </Button>
+        </CardFooter>
       )}
     </Card>
   );
