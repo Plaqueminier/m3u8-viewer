@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import Loader from "./Loader";
 
 interface ElementCardProps {
   name: string;
@@ -39,7 +40,7 @@ export const ElementCard: React.FC<ElementCardProps> = ({ name, videoKey, onClic
       {videoKey && isHovered && (
         <CardContent>
           {isLoading ? (
-            <p>Loading video...</p>
+            <Loader />
           ) : videoUrl ? (
             <video src={videoUrl} autoPlay muted loop className="w-full h-32 object-cover" />
           ) : null}

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ElementCard } from "./ElementCard";
 import { Element } from "./ElementList";
+import Loader from "./Loader";
 
 export interface Model extends Element {
   name: string;
@@ -30,7 +31,7 @@ export const ModelList: React.FC<ModelListProps> = ({ onModelClick }) => {
   });
 
   if (isLoading) {
-    return <p>Loading models...</p>;
+    return <Loader />;
   }
   if (error) {
     return <p>Error: {(error as Error).message}</p>;

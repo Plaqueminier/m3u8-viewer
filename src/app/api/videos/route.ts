@@ -17,15 +17,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const command = new ListObjectsV2Command({
       Bucket: process.env.R2_BUCKET,
       Prefix: `${modelName}/`,
-      MaxKeys: 20,
     });
 
     const response = await s3Client.send(command);
 
+    const contents = response.Contents?.toReversed().slice(0, 50);
+
     const videos =
-      response.Contents?.filter(
-        (object) => object.Key && object.Key !== `${modelName}/`
-      )
+      contents
+        ?.filter((object) => object.Key && object.Key !== `${modelName}/`)
         .map((object) => {
           const key = object.Key!;
           return {

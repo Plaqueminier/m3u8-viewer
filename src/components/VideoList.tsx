@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { ElementCard } from "./ElementCard";
+import Loader from "./Loader";
 
 export interface Video extends Element {
   name: string;
@@ -36,7 +37,7 @@ export const VideoList: React.FC<VideoListProps> = ({
   });
 
   if (isLoading) {
-    return <p>Loading videos...</p>;
+    return <Loader />;
   }
   if (error) {
     return <p>Error: {(error as Error).message}</p>;
