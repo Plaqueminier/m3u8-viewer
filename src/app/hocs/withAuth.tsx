@@ -1,26 +1,41 @@
+import { ReactNode, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import Loader from "@/components/Loader";
-import { useAuth } from "../hooks/useAuth";
-import { NextComponentType, NextPageContext } from "next";
-import { ReactElement } from "react";
 
-const withAuth = <P extends object>(
-  WrappedComponent: NextComponentType<NextPageContext, unknown, P>
-): NextComponentType<NextPageContext, unknown, P> => {
-  const WithAuth = (props: P): ReactElement | null => {
-    const { isLoading, isError } = useAuth();
+const checkAuth = async (): Promise<boolean> => {
+  const response = await fetch("/api/check-auth");
+  if (!response.ok) {
+    throw new Error("Not authenticated");
+  }
+  return response.json();
+};
+
+const withAuth = (WrappedComponent: React.ComponentType) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return function WithAuth(props: any): ReactNode {
+    const router = useRouter();
+    const { isLoading, isError } = useQuery({
+      queryKey: ["auth"],
+      queryFn: checkAuth,
+    });
+
+    useEffect(() => {
+      if (isError) {
+        router.push("/login");
+      }
+    }, [isError, router]);
 
     if (isLoading) {
       return <Loader />;
     }
 
     if (isError) {
-      return null; // The useAuth hook will redirect to login page
+      return null;
     }
 
     return <WrappedComponent {...props} />;
   };
-
-  return WithAuth;
 };
 
 export default withAuth;

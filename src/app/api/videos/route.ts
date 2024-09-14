@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { verifyAuth } from "@/utils/auth";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const authResponse = verifyAuth();
+
+  if (authResponse) {
+    return authResponse;
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const modelName = searchParams.get("model");
 

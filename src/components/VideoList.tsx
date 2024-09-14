@@ -1,3 +1,4 @@
+"use client";
 import { useQuery } from "@tanstack/react-query";
 import { ElementCard } from "./ElementCard";
 import Loader from "./Loader";

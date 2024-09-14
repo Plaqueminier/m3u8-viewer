@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
+import { verifyAuth } from "@/utils/auth";
 
 export async function GET(): Promise<NextResponse> {
+  const authResponse = verifyAuth();
+  if (authResponse) {
+    return authResponse;
+  }
+
   try {
     const command = new ListObjectsV2Command({
       Bucket: process.env.R2_BUCKET,

@@ -33,10 +33,6 @@ export const ElementCard: React.FC<ElementCardProps> = ({
 
   const handleMouseLeave = (): void => {
     setIsHovered(false);
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
-    }
   };
 
   const handleFullVideoClick = (
