@@ -4,6 +4,8 @@ import { s3Client } from "@/utils/s3Client";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { verifyAuth } from "@/utils/auth";
 
+const VIDEOS_PER_PAGE = 12;
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const authResponse = verifyAuth();
 
@@ -13,6 +15,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const searchParams = request.nextUrl.searchParams;
   const modelName = searchParams.get("model");
+  const page = parseInt(searchParams.get("page") || "1", 10);
 
   if (!modelName) {
     return NextResponse.json(
@@ -29,23 +32,42 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const response = await s3Client.send(command);
 
-    const contents = response.Contents?.toReversed().slice(0, 50);
+    const contents = response.Contents || [];
 
-    const videos =
-      contents
-        ?.filter((object) => object.Key && object.Key !== `${modelName}/`)
-        .map((object) => {
-          const key = object.Key!;
-          return {
-            name: key.substring(key.lastIndexOf("/") + 1),
-            key,
-            size: object.Size,
-          };
-        })
-        .sort((a, b) => b.name.localeCompare(a.name)) || [];
+    const totalVideos = contents.length;
+    const totalPages = Math.ceil(totalVideos / VIDEOS_PER_PAGE);
+
+    const videos = contents
+      .filter((object) => object.Key && object.Key !== `${modelName}/`)
+      .map((object) => {
+        const key = object.Key!;
+        const nameParts = key.substring(key.lastIndexOf("/") + 1).split("-");
+        const username = nameParts[0].replace(/_/g, " ");
+        const firstTimestamp =
+          nameParts[1] +
+          "-" +
+          nameParts[2] +
+          "-" +
+          nameParts[3] +
+          "_" +
+          nameParts[4] +
+          "-" +
+          nameParts[5];
+        return {
+          name: `${username} ${firstTimestamp}`,
+          key,
+          size: object.Size,
+        };
+      })
+      .sort((a, b) => b.name.localeCompare(a.name));
+
+    const paginatedVideos = videos.slice(
+      (page - 1) * VIDEOS_PER_PAGE,
+      page * VIDEOS_PER_PAGE
+    );
 
     const previewPresignedUrls = await Promise.all(
-      videos.map(async (video) => {
+      paginatedVideos.map(async (video) => {
         const previewKey = `previews/${video.key.slice(
           video.key.indexOf("/") + 1,
           video.key.lastIndexOf(".")
@@ -60,7 +82,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           { expiresIn: 3600 }
         );
 
-        // Generate presigned URL for the full video
         const fullVideoCommand = new GetObjectCommand({
           Bucket: process.env.R2_BUCKET,
           Key: video.key,
@@ -79,7 +100,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       })
     );
 
-    return NextResponse.json({ videos: previewPresignedUrls });
+    return NextResponse.json({
+      videos: previewPresignedUrls,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalVideos,
+      },
+    });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("Error listing videos:", error);
