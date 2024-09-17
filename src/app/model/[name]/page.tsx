@@ -1,9 +1,9 @@
 "use client";
 
+import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Video, VideoList } from "@/components/VideoList";
 import withAuth from "../../hocs/withAuth";
-import { ReactNode } from "react";
 
 interface ModelPageProps {
   params: { name: string };
@@ -13,8 +13,7 @@ function ModelPage({ params: { name } }: ModelPageProps): ReactNode {
   const router = useRouter();
 
   const handleVideoClick = (video: Video): void => {
-    // eslint-disable-next-line no-console
-    console.log("Selected video:", video);
+    router.push(`/model/${name}/video?key=${encodeURIComponent(video.key)}`);
   };
 
   return (

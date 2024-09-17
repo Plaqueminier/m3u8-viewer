@@ -15,21 +15,31 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const command = new GetObjectCommand({
-      Bucket: process.env.R2_BUCKET,
-      Key: videoKey,
-    });
+    const previewUrls = [];
+    for (let i = 1; i <= 10; i++) {
+      const segmentKey = `previews/${videoKey.slice(
+        videoKey.indexOf("/") + 1,
+        videoKey.lastIndexOf(".")
+      )}/segment_${i.toString().padStart(2, "0")}.mp4`;
 
-    const presignedUrl = await getSignedUrl(s3Client, command, {
-      expiresIn: 3600,
-    }); // URL expires in 1 hour
+      const command = new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: segmentKey,
+      });
 
-    return NextResponse.json({ url: presignedUrl });
+      const presignedUrl = await getSignedUrl(s3Client, command, {
+        expiresIn: 3600,
+      }); // URL expires in 1 hour
+
+      previewUrls.push(presignedUrl);
+    }
+
+    return NextResponse.json({ urls: previewUrls });
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error("Error retrieving video:", error);
+    console.error("Error retrieving preview videos:", error);
     return NextResponse.json(
-      { error: "Failed to retrieve video" },
+      { error: "Failed to retrieve preview videos" },
       { status: 500 }
     );
   }
