@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+"use client";
+import React, { useState, useEffect } from "react";
 import Loader from "./Loader";
 
 interface VideoThumbnailProps {
@@ -6,34 +7,50 @@ interface VideoThumbnailProps {
 }
 
 const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ videoUrl }) => {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>(
+    undefined
+  );
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) {
-      return;
-    }
+    const video = document.createElement("video");
+    video.src = videoUrl;
+    video.muted = true;
+    video.preload = "metadata";
+    video.crossOrigin = "anonymous";
 
-    const handleLoadedData = (): void => {
-      setIsLoading(false);
+    video.onloadedmetadata = (): void => {
+      video.currentTime = 1;
     };
 
-    video.addEventListener("loadedmetadata", handleLoadedData);
-    return (): void => {
-      video.removeEventListener("loadedmetadata", handleLoadedData);
+    video.onseeked = (): void => {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          setThumbnailUrl(url);
+        } else {
+          // eslint-disable-next-line no-console
+          console.error("Failed to create blob from canvas");
+        }
+      });
+    };
+
+    video.onerror = (e): void => {
+      // eslint-disable-next-line no-console
+      console.error("Error loading video", e);
     };
   }, [videoUrl]);
 
   return (
     <div className="w-full h-full">
-      {isLoading ? (
-        <>
-          <Loader />
-          <video ref={videoRef} src={videoUrl} muted preload="metadata" className="hidden w-full h-full object-contain" />
-        </>
+      {thumbnailUrl ? (
+        <img src={thumbnailUrl} alt="Video thumbnail" />
       ) : (
-        <video ref={videoRef} src={videoUrl} muted preload="metadata" className="w-full h-full object-contain" />
+        <Loader />
       )}
     </div>
   );
