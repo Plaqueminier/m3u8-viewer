@@ -8,10 +8,6 @@ export interface Model extends Element {
   name: string;
 }
 
-interface ModelListProps {
-  onModelClick: (model: Model) => void;
-}
-
 const fetchModels = async (): Promise<Model[]> => {
   const response = await fetch("/api/models");
   if (!response.ok) {
@@ -21,7 +17,7 @@ const fetchModels = async (): Promise<Model[]> => {
   return data.models;
 };
 
-export const ModelList: React.FC<ModelListProps> = ({ onModelClick }) => {
+export const ModelList: React.FC = () => {
   const {
     data: models,
     error,
@@ -44,7 +40,7 @@ export const ModelList: React.FC<ModelListProps> = ({ onModelClick }) => {
         <ElementCard
           key={model.name}
           name={model.name}
-          onClick={() => onModelClick(model)}
+          href={`/model/${model.name}`}
         />
       ))}
     </div>

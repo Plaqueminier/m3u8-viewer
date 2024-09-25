@@ -24,7 +24,6 @@ export interface Video extends Element {
 
 interface VideoListProps {
   modelName: string;
-  onVideoClick: (video: Video) => void;
 }
 
 interface PaginationData {
@@ -46,7 +45,6 @@ const fetchVideos = async (
 
 export const VideoList: React.FC<VideoListProps> = ({
   modelName,
-  onVideoClick,
 }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -86,7 +84,7 @@ export const VideoList: React.FC<VideoListProps> = ({
             name={video.name}
             previewUrl={video.previewPresignedUrl}
             fullVideoUrl={video.fullVideoPresignedUrl}
-            onClick={() => onVideoClick(video)}
+            href={`/model/${modelName}/video?key=${encodeURIComponent(video.key)}`}
           />
         ))}
       </div>

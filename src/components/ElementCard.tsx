@@ -12,18 +12,19 @@ interface ElementCardProps {
   name: string;
   previewUrl?: string;
   fullVideoUrl?: string;
-  onClick?: () => void;
+  href: string;
 }
 
 export const ElementCard: React.FC<ElementCardProps> = ({
   name,
   previewUrl,
   fullVideoUrl,
-  onClick,
+  href,
 }) => {
   const handleFullVideoClick = (
     e: React.MouseEvent<HTMLButtonElement>
   ): void => {
+    e.preventDefault();
     e.stopPropagation();
     if (fullVideoUrl) {
       window.open(fullVideoUrl, "_blank");
@@ -31,25 +32,27 @@ export const ElementCard: React.FC<ElementCardProps> = ({
   };
 
   return (
-    <Card
-      className="w-full mb-4 cursor-pointer hover:bg-zinc-700 transition-colors"
-      onClick={onClick}
+    <a
+      href={href}
+      className="block w-full mb-4 no-underline"
     >
-      <CardHeader>
-        <CardTitle>{name}</CardTitle>
-      </CardHeader>
-      {previewUrl && (
-        <CardContent>
-          <VideoThumbnail videoUrl={previewUrl} />
-        </CardContent>
-      )}
-      {fullVideoUrl && (
-        <CardFooter>
-          <Button onClick={handleFullVideoClick} className="w-full">
-            Open Full Video
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
+      <Card className="w-full cursor-pointer hover:bg-zinc-700 transition-colors">
+        <CardHeader>
+          <CardTitle>{name}</CardTitle>
+        </CardHeader>
+        {previewUrl && (
+          <CardContent>
+            <VideoThumbnail videoUrl={previewUrl} />
+          </CardContent>
+        )}
+        {fullVideoUrl && (
+          <CardFooter>
+            <Button onClick={handleFullVideoClick} className="w-full">
+              Open Full Video
+            </Button>
+          </CardFooter>
+        )}
+      </Card>
+    </a>
   );
 };
