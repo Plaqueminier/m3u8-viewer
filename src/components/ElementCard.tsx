@@ -8,6 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import VideoThumbnail from "./VideoThumbnail";
 
+export interface Element {
+  name: string;
+  key: string;
+}
 interface ElementCardProps {
   name: string;
   previewUrl?: string;

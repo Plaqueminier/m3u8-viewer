@@ -1,7 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { ElementCard } from "./ElementCard";
-import { Element } from "./ElementList";
 import Loader from "./Loader";
 
 export interface Model extends Element {
