@@ -90,7 +90,7 @@ export const RecentVideoList = (): ReactNode => {
                 disabled={page === 1}
               />
             </PaginationItem>
-            {pagination.totalPages > 5 && page - 2 > 1 && (
+            {pagination.totalPages > 3 && page - 2 > 1 && (
               <PaginationItem>
                 <PaginationEllipsis />
               </PaginationItem>
@@ -109,7 +109,7 @@ export const RecentVideoList = (): ReactNode => {
                   </PaginationLink>
                 </PaginationItem>
               ))}
-            {pagination.totalPages > 5 && page + 2 < pagination.totalPages && (
+            {pagination.totalPages > 3 && page + 2 < pagination.totalPages && (
               <PaginationItem>
                 <PaginationEllipsis />
               </PaginationItem>
