@@ -17,28 +17,27 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const modelName = searchParams.get("model");
   const page = parseInt(searchParams.get("page") || "1", 10);
 
-  if (!modelName) {
-    return NextResponse.json(
-      { error: "Model name is required" },
-      { status: 400 }
-    );
-  }
-
   try {
-    const command = new ListObjectsV2Command({
-      Bucket: process.env.R2_BUCKET,
-      Prefix: `${modelName}/`,
-    });
+    let command: ListObjectsV2Command;
+
+    if (modelName) {
+      command = new ListObjectsV2Command({
+        Bucket: process.env.R2_BUCKET,
+        Prefix: `${modelName}/`,
+      });
+    } else {
+      // If no model name is provided, list all videos
+      command = new ListObjectsV2Command({
+        Bucket: process.env.R2_BUCKET,
+      });
+    }
 
     const response = await s3Client.send(command);
 
     const contents = response.Contents || [];
 
-    const totalVideos = contents.length;
-    const totalPages = Math.ceil(totalVideos / VIDEOS_PER_PAGE);
-
     const videos = contents
-      .filter((object) => object.Key && object.Key !== `${modelName}/`)
+      .filter((object) => object.Key && object.Key.endsWith(".mp4") && !object.Key.startsWith("previews/"))
       .map((object) => {
         const key = object.Key!;
         const nameParts = key.substring(key.lastIndexOf("/") + 1).split("-");
@@ -57,9 +56,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           name: `${username} ${firstTimestamp}`,
           key,
           size: object.Size,
+          lastModified: object.LastModified,
         };
       })
-      .sort((a, b) => b.name.localeCompare(a.name));
+      .sort((a, b) => b.lastModified!.getTime() - a.lastModified!.getTime());
 
     const paginatedVideos = videos.slice(
       (page - 1) * VIDEOS_PER_PAGE,
@@ -104,8 +104,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       videos: previewPresignedUrls,
       pagination: {
         currentPage: page,
-        totalPages,
-        totalVideos,
+        totalPages: Math.ceil(videos.length / VIDEOS_PER_PAGE),
+        totalVideos: videos.length,
       },
     });
   } catch (error) {
