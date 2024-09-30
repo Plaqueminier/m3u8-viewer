@@ -19,7 +19,8 @@
     ],
     "paths": {
       "@/*": ["./src/*", "./scripts/*"]
-    }
+    },
+    "moduleResolution": "node"
   },
   "include": [
     "next-env.d.ts",

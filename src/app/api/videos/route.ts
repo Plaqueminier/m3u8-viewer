@@ -1,86 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { verifyAuth } from "@/utils/auth";
+import { Database, open } from "sqlite";
+import sqlite3 from "sqlite3";
+import { format } from "date-fns";
 
 const VIDEOS_PER_PAGE = 12;
 
 interface Video {
+  id: number;
   name: string;
   key: string;
   size: number;
   lastModified: Date;
 }
 
-async function fetchAllVideos(modelName: string | null): Promise<Video[]> {
-  let allVideos: Video[] = [];
-  let continuationToken: string | undefined;
-  let startAfter: string | undefined;
+function getDbConnection(): Promise<Database> {
+  return open({
+    filename: process.env.DATABASE_PATH!,
+    driver: sqlite3.Database,
+  });
+}
 
-  do {
-    let command: ListObjectsV2Command;
+async function fetchVideosFromDb(
+  modelName: string | null,
+  page: number
+): Promise<{ videos: Video[]; totalCount: number }> {
+  const db = await getDbConnection();
 
-    if (modelName) {
-      command = new ListObjectsV2Command({
-        Bucket: process.env.R2_BUCKET,
-        Prefix: `${modelName}/`,
-        ContinuationToken: continuationToken,
-      });
-    } else {
-      command = new ListObjectsV2Command({
-        Bucket: process.env.R2_BUCKET,
-        ContinuationToken: startAfter ? undefined : continuationToken,
-        StartAfter: startAfter,
-      });
-    }
+  let query = "SELECT * FROM videos";
+  let countQuery = "SELECT COUNT(*) as count FROM videos";
+  const params: (string | number)[] = [];
 
-    const response = await s3Client.send(command);
+  if (modelName) {
+    query += " WHERE key LIKE ?";
+    countQuery += " WHERE key LIKE ?";
+    params.push(`${modelName}/%`);
+  }
 
-    const contents = response.Contents || [];
+  query += " ORDER BY lastModified DESC LIMIT ? OFFSET ?";
+  params.push(VIDEOS_PER_PAGE, (page - 1) * VIDEOS_PER_PAGE);
 
-    const newVideos = contents
-      .filter(
-        (object) =>
-          object.Key &&
-          object.Key.endsWith(".mp4") &&
-          !object.Key.startsWith("previews/")
-      )
-      .map((object) => {
-        const key = object.Key!;
-        const nameParts = key.substring(key.lastIndexOf("/") + 1).split("-");
-        const username = nameParts[0].replace(/_/g, " ");
-        const firstTimestamp =
-          nameParts[1] +
-          "-" +
-          nameParts[2] +
-          "-" +
-          nameParts[3] +
-          "_" +
-          nameParts[4] +
-          "-" +
-          nameParts[5];
-        return {
-          name: `${username} ${firstTimestamp}`,
-          key,
-          size: object.Size ?? 0,
-          lastModified: object.LastModified ?? new Date(),
-        };
-      });
+  const videos = await db.all(query, ...params);
+  const [{ count }] = await db.all(countQuery, ...params.slice(0, -2));
 
-    allVideos = allVideos.concat(newVideos);
-    continuationToken = response.NextContinuationToken;
+  await db.close();
 
-    if (contents.some((object) => object.Key?.startsWith("previews/"))) {
-      startAfter = "previewszz";
-    } else if (startAfter) {
-      startAfter = undefined;
-    }
-  } while (continuationToken);
-
-  return allVideos.sort(
-    (a, b) => b.lastModified.getTime() - a.lastModified.getTime()
-  );
+  return {
+    videos: videos.map((v) => ({
+      ...v,
+      lastModified: new Date(v.lastModified),
+    })),
+    totalCount: count,
+  };
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -95,15 +69,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const page = parseInt(searchParams.get("page") || "1", 10);
 
   try {
-    const allVideos = await fetchAllVideos(modelName);
+    const { videos, totalCount } = await fetchVideosFromDb(modelName, page);
 
-    const paginatedVideos = allVideos.slice(
-      (page - 1) * VIDEOS_PER_PAGE,
-      page * VIDEOS_PER_PAGE
-    );
-
-    const previewPresignedUrls = await Promise.all(
-      paginatedVideos.map(async (video) => {
+    const videosWithUrls = await Promise.all(
+      videos.map(async (video) => {
         const previewKey = `previews/${video.key.slice(
           video.key.indexOf("/") + 1,
           video.key.lastIndexOf(".")
@@ -130,6 +99,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
         return {
           ...video,
+          name: `${video.name} ${format(video.lastModified, "yyyy-MM-dd HH:mm")}`,
           previewPresignedUrl,
           fullVideoPresignedUrl,
         };
@@ -137,11 +107,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
 
     return NextResponse.json({
-      videos: previewPresignedUrls,
+      videos: videosWithUrls,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(allVideos.length / VIDEOS_PER_PAGE),
-        totalVideos: allVideos.length,
+        totalPages: Math.ceil(totalCount / VIDEOS_PER_PAGE),
+        totalVideos: totalCount,
       },
     });
   } catch (error) {
