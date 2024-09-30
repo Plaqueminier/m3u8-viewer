@@ -6,29 +6,32 @@ import { verifyAuth } from "@/utils/auth";
 
 const VIDEOS_PER_PAGE = 12;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  const authResponse = verifyAuth();
+interface Video {
+  name: string;
+  key: string;
+  size: number;
+  lastModified: Date;
+}
 
-  if (authResponse) {
-    return authResponse;
-  }
+async function fetchAllVideos(modelName: string | null): Promise<Video[]> {
+  let allVideos: Video[] = [];
+  let continuationToken: string | undefined;
+  let startAfter: string | undefined;
 
-  const searchParams = request.nextUrl.searchParams;
-  const modelName = searchParams.get("model");
-  const page = parseInt(searchParams.get("page") || "1", 10);
-
-  try {
+  do {
     let command: ListObjectsV2Command;
 
     if (modelName) {
       command = new ListObjectsV2Command({
         Bucket: process.env.R2_BUCKET,
         Prefix: `${modelName}/`,
+        ContinuationToken: continuationToken,
       });
     } else {
-      // If no model name is provided, list all videos
       command = new ListObjectsV2Command({
         Bucket: process.env.R2_BUCKET,
+        ContinuationToken: startAfter ? undefined : continuationToken,
+        StartAfter: startAfter,
       });
     }
 
@@ -36,8 +39,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const contents = response.Contents || [];
 
-    const videos = contents
-      .filter((object) => object.Key && object.Key.endsWith(".mp4") && !object.Key.startsWith("previews/"))
+    const newVideos = contents
+      .filter(
+        (object) =>
+          object.Key &&
+          object.Key.endsWith(".mp4") &&
+          !object.Key.startsWith("previews/")
+      )
       .map((object) => {
         const key = object.Key!;
         const nameParts = key.substring(key.lastIndexOf("/") + 1).split("-");
@@ -55,13 +63,41 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         return {
           name: `${username} ${firstTimestamp}`,
           key,
-          size: object.Size,
-          lastModified: object.LastModified,
+          size: object.Size ?? 0,
+          lastModified: object.LastModified ?? new Date(),
         };
-      })
-      .sort((a, b) => b.lastModified!.getTime() - a.lastModified!.getTime());
+      });
 
-    const paginatedVideos = videos.slice(
+    allVideos = allVideos.concat(newVideos);
+    continuationToken = response.NextContinuationToken;
+
+    if (contents.some((object) => object.Key?.startsWith("previews/"))) {
+      startAfter = "previewszz";
+    } else if (startAfter) {
+      startAfter = undefined;
+    }
+  } while (continuationToken);
+
+  return allVideos.sort(
+    (a, b) => b.lastModified.getTime() - a.lastModified.getTime()
+  );
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const authResponse = verifyAuth();
+
+  if (authResponse) {
+    return authResponse;
+  }
+
+  const searchParams = request.nextUrl.searchParams;
+  const modelName = searchParams.get("model");
+  const page = parseInt(searchParams.get("page") || "1", 10);
+
+  try {
+    const allVideos = await fetchAllVideos(modelName);
+
+    const paginatedVideos = allVideos.slice(
       (page - 1) * VIDEOS_PER_PAGE,
       page * VIDEOS_PER_PAGE
     );
@@ -104,8 +140,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       videos: previewPresignedUrls,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(videos.length / VIDEOS_PER_PAGE),
-        totalVideos: videos.length,
+        totalPages: Math.ceil(allVideos.length / VIDEOS_PER_PAGE),
+        totalVideos: allVideos.length,
       },
     });
   } catch (error) {

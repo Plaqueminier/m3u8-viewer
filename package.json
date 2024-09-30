@@ -18,6 +18,7 @@
     "class-variance-authority": "0.7.0",
     "clsx": "2.1.1",
     "cookie": "0.6.0",
+    "dotenv": "16.4.5",
     "embla-carousel-react": "8.3.0",
     "jsonwebtoken": "9.0.2",
     "ldrs": "1.0.2",
@@ -25,11 +26,14 @@
     "next": "14.2.10",
     "react": "18.3.1",
     "react-dom": "18",
+    "sqlite": "5.1.1",
+    "sqlite3": "5.1.7",
     "tailwind-merge": "2.5.2",
     "tailwindcss-animate": "1.0.7",
     "typescript-eslint": "8.5.0"
   },
   "devDependencies": {
+    "ts-node": "10.9.2",
     "@types/cookie": "0.6.0",
     "@types/jsonwebtoken": "9.0.6",
     "@types/node": "20",

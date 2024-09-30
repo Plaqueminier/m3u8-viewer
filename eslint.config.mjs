@@ -2,7 +2,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default [
-  { files: ["src/**/*.ts"], languageOptions: { sourceType: "commonjs" } },
+  { files: ["src/**/*.ts", "scripts/**/*.ts"], languageOptions: { sourceType: "commonjs" } },
   { languageOptions: { globals: globals.browser } },
   ...tseslint.configs.recommended,
   {
