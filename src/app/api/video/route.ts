@@ -3,6 +3,15 @@ import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { verifyAuth } from "@/utils/auth";
+import { Database, open } from "sqlite";
+import sqlite3 from "sqlite3";
+
+function getDbConnection(): Promise<Database> {
+  return open({
+    filename: process.env.DATABASE_PATH!,
+    driver: sqlite3.Database,
+  });
+}
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const authResponse = verifyAuth();
@@ -37,6 +46,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       expiresIn: 3600,
     });
 
+    const db = await getDbConnection();
+    const videoData = await db.get(
+      "SELECT favorite FROM videos WHERE key = ?",
+      videoKey
+    );
+    await db.close();
+
     const nameParts = videoKey
       .substring(videoKey.lastIndexOf("/") + 1)
       .split("-");
@@ -49,6 +65,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       date: headResponse.LastModified?.toISOString().split("T")[0] || "Unknown",
       fileSize: formatFileSize(headResponse.ContentLength || 0),
       presignedUrl,
+      favorite: videoData?.favorite || false,
     });
   } catch (error) {
     // eslint-disable-next-line no-console

@@ -1,9 +1,9 @@
 "use client";
 
 import Loader from "@/components/Loader";
-import { RecentVideoList } from "@/components/RecentVideoList";
 import { Suspense } from "react";
 import withAuth from "../hocs/withAuth";
+import { VideoList } from "@/components/VideoList";
 
 function RecentsPage(): JSX.Element {
   return (
@@ -11,7 +11,7 @@ function RecentsPage(): JSX.Element {
       <h1 className="text-3xl font-bold mb-6 text-center">Recent Videos</h1>
       <div className="flex-grow flex items-center justify-center flex-col">
         <Suspense fallback={<Loader />}>
-          <RecentVideoList />
+          <VideoList />
         </Suspense>
       </div>
     </div>

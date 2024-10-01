@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ElementCard } from "./ElementCard";
 import Loader from "./Loader";
-import { useState } from "react";
+import { Fragment, ReactNode, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Pagination,
@@ -14,16 +14,13 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-export interface Video extends Element {
+export interface Video {
   name: string;
   key: string;
   size: number;
   previewPresignedUrl: string;
   fullVideoPresignedUrl: string;
-}
-
-interface VideoListProps {
-  modelName: string;
+  favorite: boolean;
 }
 
 interface PaginationData {
@@ -32,20 +29,35 @@ interface PaginationData {
   totalVideos: number;
 }
 
+interface VideoListProps {
+  modelName?: string;
+  isFavorites?: boolean;
+}
+
 const fetchVideos = async (
-  modelName: string,
-  page: number
+  page: number,
+  modelName?: string,
+  isFavorites?: boolean
 ): Promise<{ videos: Video[]; pagination: PaginationData }> => {
-  const response = await fetch(`/api/videos?model=${modelName}&page=${page}`);
+  const url = new URL("/api/videos", window.location.origin);
+  url.searchParams.append("page", page.toString());
+  if (modelName) {
+    url.searchParams.append("model", modelName);
+  }
+  if (isFavorites) {
+    url.searchParams.append("favorites", "true");
+  }
+  const response = await fetch(url.toString());
   if (!response.ok) {
     throw new Error("Failed to fetch videos");
   }
   return response.json();
 };
 
-export const VideoList: React.FC<VideoListProps> = ({
+export const VideoList = ({
   modelName,
-}) => {
+  isFavorites,
+}: VideoListProps): ReactNode => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(
@@ -53,16 +65,20 @@ export const VideoList: React.FC<VideoListProps> = ({
   );
 
   const { data, error, isLoading } = useQuery({
-    queryKey: ["videos", modelName, page],
-    queryFn: () => fetchVideos(modelName, page),
-    enabled: !!modelName,
+    queryKey: ["videos", modelName, isFavorites, page],
+    queryFn: () => fetchVideos(page, modelName, isFavorites),
   });
 
   const handlePageChange = (newPage: number): void => {
     setPage(newPage);
     const newSearchParams = new URLSearchParams(searchParams);
     newSearchParams.set("page", newPage.toString());
-    router.push(`/model/${modelName}?${newSearchParams.toString()}`);
+    const basePath = isFavorites
+      ? "/favorites"
+      : modelName
+        ? `/model/${modelName}`
+        : "/recents";
+    router.push(`${basePath}?${newSearchParams.toString()}`);
   };
 
   if (isLoading) {
@@ -76,7 +92,7 @@ export const VideoList: React.FC<VideoListProps> = ({
   const pagination = data?.pagination;
 
   return (
-    <>
+    <Fragment>
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {videos.map((video) => (
           <ElementCard
@@ -84,7 +100,16 @@ export const VideoList: React.FC<VideoListProps> = ({
             name={video.name}
             previewUrl={video.previewPresignedUrl}
             fullVideoUrl={video.fullVideoPresignedUrl}
-            href={`/model/${modelName}/video?key=${encodeURIComponent(video.key)}`}
+            href={
+              modelName
+                ? `/model/${modelName}/video?key=${encodeURIComponent(
+                  video.key
+                )}`
+                : `/video?key=${encodeURIComponent(video.key)}${
+                  isFavorites ? "&isFavorite=true" : ""
+                }`
+            }
+            favorite={video.favorite}
           />
         ))}
       </div>
@@ -134,6 +159,6 @@ export const VideoList: React.FC<VideoListProps> = ({
           </PaginationContent>
         </Pagination>
       )}
-    </>
+    </Fragment>
   );
 };

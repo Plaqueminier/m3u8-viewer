@@ -15,6 +15,7 @@ interface Video {
   key: string;
   size: number;
   lastModified: Date;
+  favorite: boolean;
 }
 
 function getDbConnection(): Promise<Database> {
@@ -26,7 +27,8 @@ function getDbConnection(): Promise<Database> {
 
 async function fetchVideosFromDb(
   modelName: string | null,
-  page: number
+  page: number,
+  isFavorites: boolean
 ): Promise<{ videos: Video[]; totalCount: number }> {
   const db = await getDbConnection();
 
@@ -38,6 +40,10 @@ async function fetchVideosFromDb(
     query += " WHERE key LIKE ?";
     countQuery += " WHERE key LIKE ?";
     params.push(`${modelName}/%`);
+  }
+  if (isFavorites) {
+    query += " WHERE favorite = 1";
+    countQuery += " WHERE favorite = 1";
   }
 
   query += " ORDER BY lastModified DESC LIMIT ? OFFSET ?";
@@ -67,9 +73,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const searchParams = request.nextUrl.searchParams;
   const modelName = searchParams.get("model");
   const page = parseInt(searchParams.get("page") || "1", 10);
+  const isFavorites = searchParams.get("favorites") === "true";
 
   try {
-    const { videos, totalCount } = await fetchVideosFromDb(modelName, page);
+    const { videos, totalCount } = await fetchVideosFromDb(modelName, page, isFavorites);
 
     const videosWithUrls = await Promise.all(
       videos.map(async (video) => {
@@ -102,6 +109,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           name: `${video.name} ${format(video.lastModified, "yyyy-MM-dd HH:mm")}`,
           previewPresignedUrl,
           fullVideoPresignedUrl,
+          favorite: video.favorite,
         };
       })
     );

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import VideoThumbnail from "./VideoThumbnail";
+import { Star } from "lucide-react";
 
 export interface Element {
   name: string;
@@ -17,6 +18,7 @@ interface ElementCardProps {
   previewUrl?: string;
   fullVideoUrl?: string;
   href: string;
+  favorite?: boolean;
 }
 
 export const ElementCard: React.FC<ElementCardProps> = ({
@@ -24,6 +26,7 @@ export const ElementCard: React.FC<ElementCardProps> = ({
   previewUrl,
   fullVideoUrl,
   href,
+  favorite,
 }) => {
   const handleFullVideoClick = (
     e: React.MouseEvent<HTMLButtonElement>
@@ -36,13 +39,15 @@ export const ElementCard: React.FC<ElementCardProps> = ({
   };
 
   return (
-    <a
-      href={href}
-      className="block w-full mb-4 no-underline"
-    >
+    <a href={href} className="block w-full mb-4 no-underline">
       <Card className="w-full cursor-pointer hover:bg-zinc-700 transition-colors">
         <CardHeader>
-          <CardTitle>{name}</CardTitle>
+          <CardTitle>
+            {name}
+            {favorite && (
+              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+            )}
+          </CardTitle>
         </CardHeader>
         {previewUrl && (
           <CardContent>

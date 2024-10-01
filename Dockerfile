@@ -8,7 +8,7 @@ COPY pnpm-lock.yaml ./
 COPY ./src ./src
 COPY ./.next ./.next
 COPY ./next.config.mjs .
-COPY ./.env.local .
+COPY ./.env .
 COPY ./tailwind.config.ts .
 COPY ./postcss.config.mjs .
 COPY ./tsconfig.json .

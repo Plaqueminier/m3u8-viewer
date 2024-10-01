@@ -19,7 +19,7 @@ function ModelPage({ params: { name } }: ModelPageProps): ReactNode {
         className="mb-4 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded"
         onClick={() => router.back()}
       >
-        Back to Models
+        Back
       </button>
       <VideoList modelName={name} />
     </main>

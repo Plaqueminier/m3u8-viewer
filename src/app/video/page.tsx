@@ -2,18 +2,24 @@
 
 import { useSearchParams } from "next/navigation";
 import VideoShowcase from "@/components/VideoShowcase";
-import withAuth from "@/app/hocs/withAuth";
 import { ReactNode } from "react";
+import withAuth from "../hocs/withAuth";
 
-function ModelVideoPage(): ReactNode {
+function VideoPage(): ReactNode {
   const searchParams = useSearchParams();
   const videoKey = searchParams.get("key");
-  const name = videoKey?.slice(0, videoKey.indexOf("/"));
+  const isFavorite = searchParams.get("isFavorite");
+
   if (!videoKey) {
     return <div>No video key provided</div>;
   }
 
-  return <VideoShowcase videoKey={videoKey} backLink={`/model/${name}`} />;
+  return (
+    <VideoShowcase
+      videoKey={videoKey}
+      backLink={isFavorite ? "/favorites" : "/recents"}
+    />
+  );
 }
 
-export default withAuth(ModelVideoPage);
+export default withAuth(VideoPage);
