@@ -67,6 +67,7 @@ export default function VideoShowcase({
     error: videoError,
     isLoading: isVideoLoading,
     refetch: refetchVideoData,
+    isRefetching: isVideoRefetching,
   } = useQuery<VideoData>({
     queryKey: ["video", videoKey],
     queryFn: () => fetchVideoData(videoKey),
@@ -83,8 +84,9 @@ export default function VideoShowcase({
 
   const favoriteMutation = useMutation({
     mutationFn: toggleFavorite,
-    onSuccess: () => {
+    onSuccess: (data) => {
       refetchVideoData();
+      setOptimisticFavorite(data.favorite);
     },
     onError: () => setOptimisticFavorite((prev) => !prev),
   });
@@ -115,9 +117,10 @@ export default function VideoShowcase({
     return <div>No video data available</div>;
   }
 
-  const favorite = favoriteMutation.isPending
-    ? optimisticFavorite
-    : favoriteMutation.data?.favorite;
+  const favorite =
+    favoriteMutation.isPending || isVideoRefetching
+      ? optimisticFavorite
+      : videoData.favorite;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -156,7 +159,11 @@ export default function VideoShowcase({
                     return;
                   }
                   favoriteMutation.mutate(videoData.key);
-                  setOptimisticFavorite((prev) => !prev);
+                  if (videoData.favorite && optimisticFavorite) {
+                    setOptimisticFavorite((prev) => !prev);
+                  } else {
+                    setOptimisticFavorite(!videoData.favorite);
+                  }
                 }}
               >
                 <Star

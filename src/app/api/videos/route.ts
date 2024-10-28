@@ -12,6 +12,7 @@ const VIDEOS_PER_PAGE = 12;
 interface Video {
   id: number;
   name: string;
+  date: string;
   key: string;
   size: number;
   lastModified: Date;
@@ -76,7 +77,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const isFavorites = searchParams.get("favorites") === "true";
 
   try {
-    const { videos, totalCount } = await fetchVideosFromDb(modelName, page, isFavorites);
+    const { videos, totalCount } = await fetchVideosFromDb(
+      modelName,
+      page,
+      isFavorites
+    );
 
     const videosWithUrls = await Promise.all(
       videos.map(async (video) => {
@@ -104,9 +109,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           { expiresIn: 3600 }
         );
 
+        const dateTimeMatch = video.key.match(
+          /\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}/
+        );
+        const date = dateTimeMatch
+          ? dateTimeMatch[0]
+            .replace(/_/, " ")
+            .replace(/(?<=\s)\d{2}-\d{2}-\d{2}/g, (time) =>
+              time.replace(/-/g, ":")
+            )
+          : format(video.lastModified, "yyyy-MM-dd HH:mm:ss");
+
         return {
           ...video,
-          name: `${video.name} ${format(video.lastModified, "yyyy-MM-dd HH:mm")}`,
+          name: video.name,
+          date,
           previewPresignedUrl,
           fullVideoPresignedUrl,
           favorite: video.favorite,

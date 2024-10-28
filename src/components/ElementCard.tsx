@@ -15,6 +15,7 @@ export interface Element {
 }
 interface ElementCardProps {
   name: string;
+  date?: string;
   previewUrl?: string;
   fullVideoUrl?: string;
   href: string;
@@ -23,6 +24,7 @@ interface ElementCardProps {
 
 export const ElementCard: React.FC<ElementCardProps> = ({
   name,
+  date,
   previewUrl,
   fullVideoUrl,
   href,
@@ -43,8 +45,9 @@ export const ElementCard: React.FC<ElementCardProps> = ({
       <Card className="w-full cursor-pointer hover:bg-zinc-700 transition-colors">
         <CardHeader>
           <CardTitle>
-            {name}
-            {favorite && (
+            <p>{name}</p>
+            {date && <p className="text-sm text-zinc-400">{date}</p>}
+            {!!favorite && (
               <Star className="h-4 w-4 text-yellow-400 fill-current" />
             )}
           </CardTitle>

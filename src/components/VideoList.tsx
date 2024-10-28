@@ -16,6 +16,7 @@ import {
 
 export interface Video {
   name: string;
+  date: string;
   key: string;
   size: number;
   previewPresignedUrl: string;
@@ -98,6 +99,7 @@ export const VideoList = ({
           <ElementCard
             key={video.key}
             name={video.name}
+            date={video.date}
             previewUrl={video.previewPresignedUrl}
             fullVideoUrl={video.fullVideoPresignedUrl}
             href={
