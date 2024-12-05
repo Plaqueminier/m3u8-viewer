@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
+import { PrivacyProvider } from "@/contexts/PrivacyContext";
 
 export default function Providers({
   children,
@@ -11,6 +12,8 @@ export default function Providers({
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <PrivacyProvider>{children}</PrivacyProvider>
+    </QueryClientProvider>
   );
 }

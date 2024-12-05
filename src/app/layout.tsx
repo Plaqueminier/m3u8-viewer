@@ -28,8 +28,10 @@ export default function RootLayout({
           defer
           src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/hourglass.js"
         ></script>
-        <Navbar />
-        <Providers>{children}</Providers>
+        <Providers>
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );

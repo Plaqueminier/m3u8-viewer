@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronLeft, ChevronRight, Star } from "lucide-react";
@@ -9,6 +9,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import VideoThumbnail from "@/components/VideoThumbnail";
 import Loader from "@/components/Loader";
 import PredictionBar from "./PredictionBar";
+import { usePrivacy } from "@/contexts/PrivacyContext";
 
 interface VideoData {
   key: string;
@@ -23,6 +24,14 @@ interface VideoData {
 interface PreviewData {
   urls: string[];
 }
+
+const generateRandomTitle = (length: number): string => {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  return Array.from({ length }, () =>
+    characters.charAt(Math.floor(Math.random() * characters.length))
+  ).join("");
+};
 
 const fetchVideoData = async (key: string): Promise<VideoData> => {
   const response = await fetch(`/api/video?key=${encodeURIComponent(key)}`);
@@ -63,6 +72,7 @@ export default function VideoShowcase({
 }: VideoShowcaseProps): ReactNode {
   const [currentPreview, setCurrentPreview] = useState(0);
   const [optimisticFavorite, setOptimisticFavorite] = useState(false);
+  const { isPrivacyEnabled } = usePrivacy();
 
   const {
     data: videoData,
@@ -83,6 +93,11 @@ export default function VideoShowcase({
     queryKey: ["previews", videoKey],
     queryFn: () => fetchPreviews(videoKey),
   });
+
+  const randomTitle = useMemo(
+    () => (videoData ? generateRandomTitle(videoData.title.length) : ""),
+    [videoData?.title.length]
+  );
 
   const favoriteMutation = useMutation({
     mutationFn: toggleFavorite,
@@ -143,15 +158,19 @@ export default function VideoShowcase({
                     href={`/model/${videoData.key.split("/")[0]}`}
                     className="hover:underline"
                   >
-                    {videoData.title}
+                    {isPrivacyEnabled ? randomTitle : videoData.title}
                   </Link>
+                ) : isPrivacyEnabled ? (
+                  randomTitle
                 ) : (
                   videoData.title
                 )}
                 <div className="text-sm text-gray-500">
                   <p>Date: {videoData.date}</p>
                   <p>Size: {videoData.fileSize}</p>
-                  {videoData.prediction && <PredictionBar prediction={videoData.prediction} />}
+                  {videoData.prediction && (
+                    <PredictionBar prediction={videoData.prediction} />
+                  )}
                 </div>
               </CardTitle>
             </CardHeader>
@@ -190,7 +209,9 @@ export default function VideoShowcase({
           </div>
           <div className="w-1/3 flex items-center justify-center p-4 h-full">
             {previewData && previewData.urls.length > 0 && (
-              <VideoThumbnail videoUrl={previewData.urls[0]} />
+              <div className={isPrivacyEnabled ? "blur-[50px] backdrop-blur-[50px]" : ""}>
+                <VideoThumbnail videoUrl={previewData.urls[0]} />
+              </div>
             )}
           </div>
         </div>
@@ -205,11 +226,13 @@ export default function VideoShowcase({
             >
               {previewData.urls.map((preview, index) => (
                 <div key={index} className="w-full flex-shrink-0 px-2">
-                  <video
-                    src={preview}
-                    className="w-full h-auto object-cover rounded-lg"
-                    controls
-                  />
+                  <div className={isPrivacyEnabled ? "blur-[50px] backdrop-blur-[50px]" : ""}>
+                    <video
+                      src={preview}
+                      className="w-full h-auto object-cover rounded-lg"
+                      controls
+                    />
+                  </div>
                 </div>
               ))}
             </div>
