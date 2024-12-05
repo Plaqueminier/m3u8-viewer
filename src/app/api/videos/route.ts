@@ -30,25 +30,42 @@ function getDbConnection(): Promise<Database> {
 async function fetchVideosFromDb(
   modelName: string | null,
   page: number,
-  isFavorites: boolean
+  isFavorites: boolean,
+  sortBy: "date" | "quality" = "date"
 ): Promise<{ videos: Video[]; totalCount: number }> {
   const db = await getDbConnection();
 
   let query = "SELECT * FROM videos";
   let countQuery = "SELECT COUNT(*) as count FROM videos";
   const params: (string | number)[] = [];
+  const conditions: string[] = [];
 
   if (modelName) {
-    query += " WHERE key LIKE ?";
-    countQuery += " WHERE key LIKE ?";
+    conditions.push("key LIKE ?");
     params.push(`${modelName}/%`);
   }
   if (isFavorites) {
-    query += " WHERE favorite = 1";
-    countQuery += " WHERE favorite = 1";
+    conditions.push("favorite = 1");
   }
 
-  query += " ORDER BY lastModified DESC LIMIT ? OFFSET ?";
+  if (conditions.length > 0) {
+    const whereClause = conditions.join(" AND ");
+    query += ` WHERE ${whereClause}`;
+    countQuery += ` WHERE ${whereClause}`;
+  }
+
+  // Add ORDER BY clause based on sortBy
+  if (sortBy === "quality") {
+    // Calculate prediction quality as percentage of '1's and order by it
+    query += ` ORDER BY (
+      CAST(LENGTH(REPLACE(prediction, '0', '')) AS FLOAT) / 
+      CAST(NULLIF(LENGTH(prediction), 0) AS FLOAT)
+    ) DESC NULLS LAST, lastModified DESC`;
+  } else {
+    query += " ORDER BY lastModified DESC";
+  }
+
+  query += " LIMIT ? OFFSET ?";
   params.push(VIDEOS_PER_PAGE, (page - 1) * VIDEOS_PER_PAGE);
 
   const videos = await db.all(query, ...params);
@@ -76,12 +93,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const modelName = searchParams.get("model");
   const page = parseInt(searchParams.get("page") || "1", 10);
   const isFavorites = searchParams.get("favorites") === "true";
+  const sortBy = searchParams.get("sortBy") || "date";
 
   try {
     const { videos, totalCount } = await fetchVideosFromDb(
       modelName,
       page,
-      isFavorites
+      isFavorites,
+      sortBy as "date" | "quality"
     );
 
     const videosWithUrls = await Promise.all(

@@ -34,6 +34,7 @@ interface PaginationData {
 interface VideoListProps {
   modelName?: string;
   isFavorites?: boolean;
+  sortBy?: "date" | "quality";
 }
 
 const formatFileSize = (bytes: number): string => {
@@ -49,10 +50,12 @@ const formatFileSize = (bytes: number): string => {
 const fetchVideos = async (
   page: number,
   modelName?: string,
-  isFavorites?: boolean
+  isFavorites?: boolean,
+  sortBy: "date" | "quality" = "date"
 ): Promise<{ videos: Video[]; pagination: PaginationData }> => {
   const url = new URL("/api/videos", window.location.origin);
   url.searchParams.append("page", page.toString());
+  url.searchParams.append("sortBy", sortBy);
   if (modelName) {
     url.searchParams.append("model", modelName);
   }
@@ -69,6 +72,7 @@ const fetchVideos = async (
 export const VideoList = ({
   modelName,
   isFavorites,
+  sortBy = "date",
 }: VideoListProps): ReactNode => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -77,8 +81,8 @@ export const VideoList = ({
   );
 
   const { data, error, isLoading } = useQuery({
-    queryKey: ["videos", modelName, isFavorites, page],
-    queryFn: () => fetchVideos(page, modelName, isFavorites),
+    queryKey: ["videos", modelName, isFavorites, page, sortBy],
+    queryFn: () => fetchVideos(page, modelName, isFavorites, sortBy),
   });
 
   const handlePageChange = (newPage: number): void => {
@@ -89,7 +93,9 @@ export const VideoList = ({
       ? "/favorites"
       : modelName
         ? `/model/${modelName}`
-        : "/recents";
+        : sortBy === "quality"
+          ? "/quality"
+          : "/recents";
     router.push(`${basePath}?${newSearchParams.toString()}`);
   };
 

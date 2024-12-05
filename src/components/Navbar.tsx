@@ -10,6 +10,7 @@ import { usePrivacy } from "@/contexts/PrivacyContext";
 const navItems = [
   { href: "/models", label: "Models" },
   { href: "/recents", label: "Recent" },
+  { href: "/quality", label: "Quality" },
   { href: "/favorites", label: "Favorites" },
 ];
 
