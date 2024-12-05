@@ -3,13 +3,31 @@
 import { ReactNode, useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import VideoThumbnail from "@/components/VideoThumbnail";
 import Loader from "@/components/Loader";
 import PredictionBar from "./PredictionBar";
 import { usePrivacy } from "@/contexts/PrivacyContext";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface VideoData {
   key: string;
@@ -61,6 +79,17 @@ const toggleFavorite = async (key: string): Promise<{ favorite: boolean }> => {
   return response.json();
 };
 
+const deleteVideo = async (key: string): Promise<void> => {
+  const response = await fetch("/api/video/delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key }),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to delete video");
+  }
+};
+
 interface VideoShowcaseProps {
   videoKey: string;
   backLink: string;
@@ -70,6 +99,7 @@ export default function VideoShowcase({
   videoKey,
   backLink,
 }: VideoShowcaseProps): ReactNode {
+  const router = useRouter();
   const [currentPreview, setCurrentPreview] = useState(0);
   const [optimisticFavorite, setOptimisticFavorite] = useState(false);
   const { isPrivacyEnabled } = usePrivacy();
@@ -106,6 +136,13 @@ export default function VideoShowcase({
       setOptimisticFavorite(data.favorite);
     },
     onError: () => setOptimisticFavorite((prev) => !prev),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteVideo,
+    onSuccess: () => {
+      router.push(backLink);
+    },
   });
 
   const nextPreview = (): void => {
@@ -198,6 +235,7 @@ export default function VideoShowcase({
                     setOptimisticFavorite(!videoData.favorite);
                   }
                 }}
+                className="mr-2"
               >
                 <Star
                   className={`h-4 w-4 ${
@@ -205,11 +243,40 @@ export default function VideoShowcase({
                   }`}
                 />
               </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="icon">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete
+                      the video from both storage and database.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteMutation.mutate(videoData.key)}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </CardContent>
           </div>
           <div className="w-1/3 flex items-center justify-center p-4 h-full">
             {previewData && previewData.urls.length > 0 && (
-              <div className={isPrivacyEnabled ? "blur-[50px] backdrop-blur-[50px]" : ""}>
+              <div
+                className={
+                  isPrivacyEnabled ? "blur-[50px] backdrop-blur-[50px]" : ""
+                }
+              >
                 <VideoThumbnail videoUrl={previewData.urls[0]} />
               </div>
             )}
@@ -226,7 +293,11 @@ export default function VideoShowcase({
             >
               {previewData.urls.map((preview, index) => (
                 <div key={index} className="w-full flex-shrink-0 px-2">
-                  <div className={isPrivacyEnabled ? "blur-[50px] backdrop-blur-[50px]" : ""}>
+                  <div
+                    className={
+                      isPrivacyEnabled ? "blur-[50px] backdrop-blur-[50px]" : ""
+                    }
+                  >
                     <video
                       src={preview}
                       className="w-full h-auto object-cover rounded-lg"

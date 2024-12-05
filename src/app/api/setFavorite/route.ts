@@ -3,7 +3,7 @@ import { Database, open } from "sqlite";
 import sqlite3 from "sqlite3";
 import { verifyAuth } from "@/utils/auth";
 
-function getDbConnection(): Promise<Database> {
+export function getDbConnection(): Promise<Database> {
   return open({
     filename: process.env.DATABASE_PATH!,
     driver: sqlite3.Database,
