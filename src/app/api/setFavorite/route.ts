@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Database, open } from "sqlite";
-import sqlite3 from "sqlite3";
 import { verifyAuth } from "@/utils/auth";
-
-export function getDbConnection(): Promise<Database> {
-  return open({
-    filename: process.env.DATABASE_PATH!,
-    driver: sqlite3.Database,
-  });
-}
+import { getDbConnection } from "../utils";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const authResponse = verifyAuth();

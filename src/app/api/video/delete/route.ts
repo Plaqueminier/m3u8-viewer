@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { getDbConnection } from "../../setFavorite/route";
 import { s3Client } from "@/utils/s3Client";
+import { getDbConnection } from "../../utils";
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
