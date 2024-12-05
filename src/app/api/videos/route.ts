@@ -17,6 +17,7 @@ interface Video {
   size: number;
   lastModified: Date;
   favorite: boolean;
+  prediction: string;
 }
 
 function getDbConnection(): Promise<Database> {
@@ -127,6 +128,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           previewPresignedUrl,
           fullVideoPresignedUrl,
           favorite: video.favorite,
+          prediction: video.prediction
         };
       })
     );

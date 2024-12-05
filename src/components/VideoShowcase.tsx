@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import VideoThumbnail from "@/components/VideoThumbnail";
 import Loader from "@/components/Loader";
+import PredictionBar from "./PredictionBar";
 
 interface VideoData {
   key: string;
@@ -16,6 +17,7 @@ interface VideoData {
   fileSize: string;
   presignedUrl: string;
   favorite: boolean;
+  prediction: string;
 }
 
 interface PreviewData {
@@ -135,11 +137,23 @@ export default function VideoShowcase({
         <div className="flex h-full max-h-full">
           <div className="flex-grow">
             <CardHeader>
-              <CardTitle>{videoData.title}</CardTitle>
-              <div className="text-sm text-gray-500">
-                <p>Date: {videoData.date}</p>
-                <p>Size: {videoData.fileSize}</p>
-              </div>
+              <CardTitle>
+                {videoData.key.includes("/") ? (
+                  <Link
+                    href={`/model/${videoData.key.split("/")[0]}`}
+                    className="hover:underline"
+                  >
+                    {videoData.title}
+                  </Link>
+                ) : (
+                  videoData.title
+                )}
+                <div className="text-sm text-gray-500">
+                  <p>Date: {videoData.date}</p>
+                  <p>Size: {videoData.fileSize}</p>
+                  {videoData.prediction && <PredictionBar prediction={videoData.prediction} />}
+                </div>
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex items-center">
               <Button asChild className="mr-2">

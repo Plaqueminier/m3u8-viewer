@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import VideoThumbnail from "./VideoThumbnail";
 import { Star } from "lucide-react";
+import PredictionBar from "./PredictionBar";
 
 export interface Element {
   name: string;
@@ -20,6 +21,8 @@ interface ElementCardProps {
   fullVideoUrl?: string;
   href: string;
   favorite?: boolean;
+  fileSize?: string;
+  prediction?: string;
 }
 
 export const ElementCard: React.FC<ElementCardProps> = ({
@@ -29,6 +32,8 @@ export const ElementCard: React.FC<ElementCardProps> = ({
   fullVideoUrl,
   href,
   favorite,
+  fileSize,
+  prediction,
 }) => {
   const handleFullVideoClick = (
     e: React.MouseEvent<HTMLButtonElement>
@@ -45,8 +50,10 @@ export const ElementCard: React.FC<ElementCardProps> = ({
       <Card className="w-full cursor-pointer hover:bg-zinc-700 transition-colors">
         <CardHeader>
           <CardTitle>
-            <p>{name}</p>
+            <p className="mb-1">{name}</p>
             {date && <p className="text-sm text-zinc-400">{date}</p>}
+            {fileSize && <p className="text-sm text-zinc-400">Size: {fileSize}</p>}
+            {prediction && <PredictionBar prediction={prediction} />}
             {!!favorite && (
               <Star className="h-4 w-4 text-yellow-400 fill-current" />
             )}

@@ -48,7 +48,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const db = await getDbConnection();
     const videoData = await db.get(
-      "SELECT favorite FROM videos WHERE key = ?",
+      "SELECT favorite, prediction FROM videos WHERE key = ?",
       videoKey
     );
     await db.close();
@@ -66,6 +66,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       fileSize: formatFileSize(headResponse.ContentLength || 0),
       presignedUrl,
       favorite: videoData?.favorite || false,
+      prediction: videoData?.prediction || "0".repeat(100)
     });
   } catch (error) {
     // eslint-disable-next-line no-console

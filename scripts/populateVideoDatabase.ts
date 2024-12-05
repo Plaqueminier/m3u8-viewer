@@ -68,7 +68,9 @@ async function populateDatabase(): Promise<void> {
       name TEXT NOT NULL,
       key TEXT NOT NULL UNIQUE,
       size INTEGER NOT NULL,
-      lastModified INTEGER NOT NULL
+      lastModified INTEGER NOT NULL,
+      favorite BOOLEAN DEFAULT 0,
+      prediction TEXT DEFAULT '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
     )
   `);
 
