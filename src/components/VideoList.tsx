@@ -105,7 +105,7 @@ export const VideoList = ({
       newSearchParams.delete("favorites");
     }
 
-    const basePath = modelName ? `/model/${modelName}` : "/recents";
+    const basePath = modelName ? `/model/${modelName}` : "/videos";
     router.push(`${basePath}?${newSearchParams.toString()}`);
   };
 
