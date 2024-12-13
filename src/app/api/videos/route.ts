@@ -31,7 +31,8 @@ async function fetchVideosFromDb(
   modelName: string | null,
   page: number,
   isFavorites: boolean,
-  sortBy: "date" | "quality" = "date"
+  sortBy: "date" | "quality" | "size" = "date",
+  sortOrder: "asc" | "desc" = "desc"
 ): Promise<{ videos: Video[]; totalCount: number }> {
   const db = await getDbConnection();
 
@@ -54,15 +55,25 @@ async function fetchVideosFromDb(
     countQuery += ` WHERE ${whereClause}`;
   }
 
-  // Add ORDER BY clause based on sortBy
-  if (sortBy === "quality") {
+  // Add ORDER BY clause based on sortBy and sortOrder
+  switch (sortBy) {
+  case "quality":
     // Calculate prediction quality as percentage of '1's and order by it
     query += ` ORDER BY (
-      CAST(LENGTH(REPLACE(prediction, '0', '')) AS FLOAT) / 
-      CAST(NULLIF(LENGTH(prediction), 0) AS FLOAT)
-    ) DESC NULLS LAST, lastModified DESC`;
-  } else {
-    query += " ORDER BY lastModified DESC";
+        CAST(LENGTH(REPLACE(prediction, '0', '')) AS FLOAT) / 
+        CAST(NULLIF(LENGTH(prediction), 0) AS FLOAT)
+      ) ${sortOrder === "asc" ? "ASC" : "DESC"} NULLS LAST`;
+    break;
+  case "size":
+    query += ` ORDER BY size ${sortOrder === "asc" ? "ASC" : "DESC"}`;
+    break;
+  default: // date
+    query += ` ORDER BY lastModified ${sortOrder === "asc" ? "ASC" : "DESC"}`;
+  }
+
+  // Add secondary sort by lastModified if not already sorting by date
+  if (sortBy !== "date") {
+    query += ", lastModified DESC";
   }
 
   query += " LIMIT ? OFFSET ?";
@@ -93,14 +104,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const modelName = searchParams.get("model");
   const page = parseInt(searchParams.get("page") || "1", 10);
   const isFavorites = searchParams.get("favorites") === "true";
-  const sortBy = searchParams.get("sortBy") || "date";
+  const sortBy = (searchParams.get("sortBy") || "date") as
+    | "date"
+    | "quality"
+    | "size";
+  const sortOrder = (searchParams.get("sortOrder") || "desc") as "asc" | "desc";
 
   try {
     const { videos, totalCount } = await fetchVideosFromDb(
       modelName,
       page,
       isFavorites,
-      sortBy as "date" | "quality"
+      sortBy,
+      sortOrder
     );
 
     const videosWithUrls = await Promise.all(
@@ -147,7 +163,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           previewPresignedUrl,
           fullVideoPresignedUrl,
           favorite: video.favorite,
-          prediction: video.prediction
+          prediction: video.prediction,
         };
       })
     );

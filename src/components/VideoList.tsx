@@ -13,6 +13,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { VideoControls } from "./VideoControls";
 
 export interface Video {
   name: string;
@@ -34,7 +35,7 @@ interface PaginationData {
 interface VideoListProps {
   modelName?: string;
   isFavorites?: boolean;
-  sortBy?: "date" | "quality";
+  sortBy?: "date" | "quality" | "size";
 }
 
 const formatFileSize = (bytes: number): string => {
@@ -51,11 +52,13 @@ const fetchVideos = async (
   page: number,
   modelName?: string,
   isFavorites?: boolean,
-  sortBy: "date" | "quality" = "date"
+  sortBy: "date" | "quality" | "size" = "date",
+  sortOrder: "asc" | "desc" = "desc"
 ): Promise<{ videos: Video[]; pagination: PaginationData }> => {
   const url = new URL("/api/videos", window.location.origin);
   url.searchParams.append("page", page.toString());
   url.searchParams.append("sortBy", sortBy);
+  url.searchParams.append("sortOrder", sortOrder);
   if (modelName) {
     url.searchParams.append("model", modelName);
   }
@@ -71,32 +74,44 @@ const fetchVideos = async (
 
 export const VideoList = ({
   modelName,
-  isFavorites,
-  sortBy = "date",
+  isFavorites: defaultIsFavorites = false,
+  sortBy: defaultSortBy = "date",
 }: VideoListProps): ReactNode => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(
     parseInt(searchParams.get("page") || "1", 10)
   );
+  const [sortBy, setSortBy] = useState<"date" | "quality" | "size">(
+    defaultSortBy
+  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [showFavorites, setShowFavorites] = useState(defaultIsFavorites);
 
   const { data, error, isLoading } = useQuery({
-    queryKey: ["videos", modelName, isFavorites, page, sortBy],
-    queryFn: () => fetchVideos(page, modelName, isFavorites, sortBy),
+    queryKey: ["videos", modelName, showFavorites, page, sortBy, sortOrder],
+    queryFn: () =>
+      fetchVideos(page, modelName, showFavorites, sortBy, sortOrder),
   });
+
+  const updateUrl = (newPage: number): void => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set("page", newPage.toString());
+    newSearchParams.set("sortBy", sortBy);
+    newSearchParams.set("sortOrder", sortOrder);
+    if (showFavorites) {
+      newSearchParams.set("favorites", "true");
+    } else {
+      newSearchParams.delete("favorites");
+    }
+
+    const basePath = modelName ? `/model/${modelName}` : "/recents";
+    router.push(`${basePath}?${newSearchParams.toString()}`);
+  };
 
   const handlePageChange = (newPage: number): void => {
     setPage(newPage);
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set("page", newPage.toString());
-    const basePath = isFavorites
-      ? "/favorites"
-      : modelName
-        ? `/model/${modelName}`
-        : sortBy === "quality"
-          ? "/quality"
-          : "/recents";
-    router.push(`${basePath}?${newSearchParams.toString()}`);
+    updateUrl(newPage);
   };
 
   if (isLoading) {
@@ -111,6 +126,27 @@ export const VideoList = ({
 
   return (
     <Fragment>
+      <VideoControls
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        showFavorites={showFavorites}
+        onSortByChange={(value) => {
+          setSortBy(value as "date" | "quality" | "size");
+          setPage(1);
+          updateUrl(1);
+        }}
+        onSortOrderChange={(value) => {
+          setSortOrder(value);
+          setPage(1);
+          updateUrl(1);
+        }}
+        onFavoritesChange={(value) => {
+          setShowFavorites(value);
+          setPage(1);
+          updateUrl(1);
+        }}
+      />
+
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {videos.map((video) => (
           <ElementCard
@@ -125,7 +161,7 @@ export const VideoList = ({
                   video.key
                 )}`
                 : `/video?key=${encodeURIComponent(video.key)}${
-                  isFavorites ? "&isFavorite=true" : ""
+                  showFavorites ? "&isFavorite=true" : ""
                 }`
             }
             favorite={video.favorite}
@@ -134,6 +170,7 @@ export const VideoList = ({
           />
         ))}
       </div>
+
       {pagination && (
         <Pagination className="mt-4">
           <PaginationContent>
