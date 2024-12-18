@@ -24,6 +24,7 @@ export interface Video {
   fullVideoPresignedUrl: string;
   favorite: boolean;
   prediction: string;
+  seen: string | null;
 }
 
 interface PaginationData {
@@ -83,10 +84,14 @@ export const VideoList = ({
     parseInt(searchParams.get("page") || "1", 10)
   );
   const [sortBy, setSortBy] = useState<"date" | "quality" | "size">(
-    defaultSortBy
+    (searchParams.get("sortBy") as "date" | "quality" | "size") || defaultSortBy
   );
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [showFavorites, setShowFavorites] = useState(defaultIsFavorites);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(
+    (searchParams.get("sortOrder") as "asc" | "desc") || "desc"
+  );
+  const [showFavorites, setShowFavorites] = useState(
+    searchParams.get("favorites") === "true" || defaultIsFavorites
+  );
 
   const { data, error, isLoading } = useQuery({
     queryKey: ["videos", modelName, showFavorites, page, sortBy, sortOrder],
@@ -94,7 +99,11 @@ export const VideoList = ({
       fetchVideos(page, modelName, showFavorites, sortBy, sortOrder),
   });
 
-  const updateUrl = (newPage: number): void => {
+  const updateUrl = (
+    newPage: number,
+    sortBy: "date" | "quality" | "size",
+    sortOrder: "asc" | "desc"
+  ): void => {
     const newSearchParams = new URLSearchParams(searchParams);
     newSearchParams.set("page", newPage.toString());
     newSearchParams.set("sortBy", sortBy);
@@ -111,7 +120,7 @@ export const VideoList = ({
 
   const handlePageChange = (newPage: number): void => {
     setPage(newPage);
-    updateUrl(newPage);
+    updateUrl(newPage, sortBy, sortOrder);
   };
 
   if (isLoading) {
@@ -133,17 +142,17 @@ export const VideoList = ({
         onSortByChange={(value) => {
           setSortBy(value as "date" | "quality" | "size");
           setPage(1);
-          updateUrl(1);
+          updateUrl(1, value as "date" | "quality" | "size", sortOrder);
         }}
         onSortOrderChange={(value) => {
           setSortOrder(value);
           setPage(1);
-          updateUrl(1);
+          updateUrl(1, sortBy, sortOrder);
         }}
         onFavoritesChange={(value) => {
           setShowFavorites(value);
           setPage(1);
-          updateUrl(1);
+          updateUrl(1, sortBy, sortOrder);
         }}
       />
 
@@ -158,15 +167,16 @@ export const VideoList = ({
             href={
               modelName
                 ? `/model/${modelName}/video?key=${encodeURIComponent(
-                  video.key
-                )}`
+                    video.key
+                  )}`
                 : `/video?key=${encodeURIComponent(video.key)}${
-                  showFavorites ? "&isFavorite=true" : ""
-                }`
+                    showFavorites ? "&isFavorite=true" : ""
+                  }`
             }
             favorite={video.favorite}
             fileSize={formatFileSize(video.size)}
             prediction={video.prediction}
+            seen={video.seen}
           />
         ))}
       </div>

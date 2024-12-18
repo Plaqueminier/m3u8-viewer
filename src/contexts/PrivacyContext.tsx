@@ -27,17 +27,13 @@ export function PrivacyProvider({
   // Load the initial value from localStorage only on the client side
   useEffect(() => {
     const stored = localStorage.getItem(PRIVACY_STORAGE_KEY);
-    if (stored !== null) {
+    if (stored !== null && stored !== isPrivacyEnabled.toString()) {
       setIsPrivacyEnabled(JSON.parse(stored));
     }
   }, []);
 
-  // Update localStorage when privacy setting changes
-  useEffect(() => {
-    localStorage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(isPrivacyEnabled));
-  }, [isPrivacyEnabled]);
-
   const togglePrivacy = (): void => {
+    localStorage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(!isPrivacyEnabled));
     setIsPrivacyEnabled((prev) => !prev);
   };
 

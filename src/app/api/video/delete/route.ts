@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
 import { getDbConnection } from "../../utils";
+
+function getPreviewPrefix(key: string): string {
+  // Extract the filename without the path
+  const filename = key.split("/").pop() || "";
+  // Remove the extension
+  const nameWithoutExt = filename.replace(".mp4", "");
+  return `previews/${nameWithoutExt}`;
+}
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -10,7 +18,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Key is required" }, { status: 400 });
     }
 
-    // Delete from S3
+    // Delete original video from S3
     await s3Client.send(
       new DeleteObjectCommand({
         Bucket: process.env.R2_BUCKET,
@@ -18,16 +26,39 @@ export async function POST(request: Request): Promise<NextResponse> {
       })
     );
 
+    // List and delete all preview segments
+    const previewPrefix = getPreviewPrefix(key);
+    const listCommand = new ListObjectsV2Command({
+      Bucket: process.env.R2_BUCKET,
+      Prefix: previewPrefix,
+    });
+
+    const listedObjects = await s3Client.send(listCommand);
+
+    if (listedObjects.Contents) {
+      // Delete all preview segments
+      await Promise.all(
+        listedObjects.Contents.map((object) => {
+          if (!object.Key) {
+            return Promise.resolve();
+          }
+          return s3Client.send(
+            new DeleteObjectCommand({
+              Bucket: process.env.R2_BUCKET,
+              Key: object.Key,
+            })
+          );
+        })
+      );
+    }
+
     // Delete from SQLite
     const db = await getDbConnection();
-
     await db.run("DELETE FROM videos WHERE key = ?", key);
-
     await db.close();
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    // Log error to server logs without using console
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(

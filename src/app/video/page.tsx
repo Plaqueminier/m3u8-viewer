@@ -8,7 +8,6 @@ import withAuth from "../hocs/withAuth";
 function VideoPage(): ReactNode {
   const searchParams = useSearchParams();
   const videoKey = searchParams.get("key");
-  const isFavorite = searchParams.get("isFavorite");
 
   if (!videoKey) {
     return <div>No video key provided</div>;
@@ -17,7 +16,7 @@ function VideoPage(): ReactNode {
   return (
     <VideoShowcase
       videoKey={videoKey}
-      backLink={isFavorite ? "/favorites" : "/recents"}
+      backLink={"/videos"}
     />
   );
 }

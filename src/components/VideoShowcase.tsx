@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useMemo } from "react";
+import { ReactNode, useState, useMemo, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,6 +90,17 @@ const deleteVideo = async (key: string): Promise<void> => {
   }
 };
 
+const updateSeen = async (key: string): Promise<void> => {
+  const response = await fetch("/api/video/seen", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key }),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update seen timestamp");
+  }
+};
+
 interface VideoShowcaseProps {
   videoKey: string;
   backLink: string;
@@ -114,6 +125,18 @@ export default function VideoShowcase({
     queryKey: ["video", videoKey],
     queryFn: () => fetchVideoData(videoKey),
   });
+
+  // Update seen timestamp when video data is successfully loaded
+  const seeVideoMutation = useMutation({
+    mutationFn: updateSeen,
+    onError: (_error) => {
+      // Silent failure as this is not critical functionality
+    },
+  });
+
+  useEffect(() => {
+    seeVideoMutation.mutate(videoKey);
+  }, [videoKey]);
 
   const {
     data: previewData,

@@ -26,6 +26,7 @@ interface ElementCardProps {
   favorite?: boolean;
   fileSize?: string;
   prediction?: string;
+  seen?: string | null;
 }
 
 const generateRandomTitle = (length: number): string => {
@@ -45,6 +46,7 @@ export const ElementCard: React.FC<ElementCardProps> = ({
   favorite,
   fileSize,
   prediction,
+  seen,
 }) => {
   const { isPrivacyEnabled } = usePrivacy();
   const randomTitle = useMemo(
@@ -71,6 +73,9 @@ export const ElementCard: React.FC<ElementCardProps> = ({
             {date && <p className="text-sm text-zinc-400">{date}</p>}
             {fileSize && (
               <p className="text-sm text-zinc-400">Size: {fileSize}</p>
+            )}
+            {seen && (
+              <p className="text-sm text-zinc-400">Last seen: {new Date(seen).toLocaleString()}</p>
             )}
             {prediction && <PredictionBar prediction={prediction} />}
             {!!favorite && (
