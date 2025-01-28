@@ -31,6 +31,7 @@ async function fetchVideosFromDb(
   modelName: string | null,
   page: number,
   isFavorites: boolean,
+  showUnseen: boolean,
   sortBy: "date" | "quality" | "size" = "date",
   sortOrder: "asc" | "desc" = "desc"
 ): Promise<{ videos: Video[]; totalCount: number }> {
@@ -47,6 +48,9 @@ async function fetchVideosFromDb(
   }
   if (isFavorites) {
     conditions.push("favorite = 1");
+  }
+  if (showUnseen) {
+    conditions.push("seen IS NULL");
   }
 
   if (conditions.length > 0) {
@@ -104,6 +108,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const modelName = searchParams.get("model");
   const page = parseInt(searchParams.get("page") || "1", 10);
   const isFavorites = searchParams.get("favorites") === "true";
+  const showUnseen = searchParams.get("unseen") === "true";
   const sortBy = (searchParams.get("sortBy") || "date") as
     | "date"
     | "quality"
@@ -115,6 +120,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       modelName,
       page,
       isFavorites,
+      showUnseen,
       sortBy,
       sortOrder
     );
@@ -150,10 +156,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         );
         const date = dateTimeMatch
           ? dateTimeMatch[0]
-            .replace(/_/, " ")
-            .replace(/(?<=\s)\d{2}-\d{2}-\d{2}/g, (time) =>
-              time.replace(/-/g, ":")
-            )
+              .replace(/_/, " ")
+              .replace(/(?<=\s)\d{2}-\d{2}-\d{2}/g, (time) =>
+                time.replace(/-/g, ":")
+              )
           : format(video.lastModified, "yyyy-MM-dd HH:mm:ss");
 
         return {

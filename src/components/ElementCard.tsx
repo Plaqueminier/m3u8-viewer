@@ -75,7 +75,7 @@ export const ElementCard: React.FC<ElementCardProps> = ({
               <p className="text-sm text-zinc-400">Size: {fileSize}</p>
             )}
             {seen && (
-              <p className="text-sm text-zinc-400">Last seen: {new Date(seen).toLocaleString()}</p>
+              <p className="text-sm text-zinc-400">Last seen: {new Date(seen).toISOString()}</p>
             )}
             {prediction && <PredictionBar prediction={prediction} />}
             {!!favorite && (

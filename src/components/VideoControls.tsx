@@ -8,24 +8,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { StarIcon } from "lucide-react";
+import { StarIcon, EyeIcon } from "lucide-react";
 
 interface VideoControlsProps {
   sortBy: string;
   sortOrder: "asc" | "desc";
   showFavorites: boolean;
+  showUnseen: boolean;
   onSortByChange: (value: string) => void;
   onSortOrderChange: (value: "asc" | "desc") => void;
   onFavoritesChange: (value: boolean) => void;
+  onUnseenChange: (value: boolean) => void;
 }
 
 export function VideoControls({
   sortBy,
   sortOrder,
   showFavorites,
+  showUnseen,
   onSortByChange,
   onSortOrderChange,
   onFavoritesChange,
+  onUnseenChange,
 }: VideoControlsProps): React.ReactNode {
   return (
     <div className="flex flex-wrap gap-4 mb-6 items-center">
@@ -52,17 +56,31 @@ export function VideoControls({
         </Select>
       </div>
 
-      <Button
-        variant={showFavorites ? "secondary" : "outline"}
-        onClick={() => onFavoritesChange(!showFavorites)}
-        className="flex items-center gap-2"
-      >
-        <StarIcon
-          className={showFavorites ? "text-yellow-400" : ""}
-          size={16}
-        />
-        {showFavorites ? "All Videos" : "Favorites Only"}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant={showFavorites ? "secondary" : "outline"}
+          onClick={() => onFavoritesChange(!showFavorites)}
+          className="flex items-center gap-2"
+        >
+          <StarIcon
+            className={showFavorites ? "text-yellow-400" : ""}
+            size={16}
+          />
+          {showFavorites ? "All Videos" : "Favorites Only"}
+        </Button>
+
+        <Button
+          variant={showUnseen ? "secondary" : "outline"}
+          onClick={() => onUnseenChange(!showUnseen)}
+          className="flex items-center gap-2"
+        >
+          <EyeIcon
+            className={showUnseen ? "text-blue-400" : ""}
+            size={16}
+          />
+          {showUnseen ? "All Videos" : "Unseen Only"}
+        </Button>
+      </div>
     </div>
   );
 }

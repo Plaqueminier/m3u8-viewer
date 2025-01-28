@@ -53,6 +53,7 @@ const fetchVideos = async (
   page: number,
   modelName?: string,
   isFavorites?: boolean,
+  showUnseen?: boolean,
   sortBy: "date" | "quality" | "size" = "date",
   sortOrder: "asc" | "desc" = "desc"
 ): Promise<{ videos: Video[]; pagination: PaginationData }> => {
@@ -65,6 +66,9 @@ const fetchVideos = async (
   }
   if (isFavorites) {
     url.searchParams.append("favorites", "true");
+  }
+  if (showUnseen) {
+    url.searchParams.append("unseen", "true");
   }
   const response = await fetch(url.toString());
   if (!response.ok) {
@@ -92,11 +96,14 @@ export const VideoList = ({
   const [showFavorites, setShowFavorites] = useState(
     searchParams.get("favorites") === "true" || defaultIsFavorites
   );
+  const [showUnseen, setShowUnseen] = useState(
+    searchParams.get("unseen") === "true"
+  );
 
   const { data, error, isLoading } = useQuery({
-    queryKey: ["videos", modelName, showFavorites, page, sortBy, sortOrder],
+    queryKey: ["videos", modelName, showFavorites, showUnseen, page, sortBy, sortOrder],
     queryFn: () =>
-      fetchVideos(page, modelName, showFavorites, sortBy, sortOrder),
+      fetchVideos(page, modelName, showFavorites, showUnseen, sortBy, sortOrder),
   });
 
   const updateUrl = (
@@ -112,6 +119,11 @@ export const VideoList = ({
       newSearchParams.set("favorites", "true");
     } else {
       newSearchParams.delete("favorites");
+    }
+    if (showUnseen) {
+      newSearchParams.set("unseen", "true");
+    } else {
+      newSearchParams.delete("unseen");
     }
 
     const basePath = modelName ? `/model/${modelName}` : "/videos";
@@ -139,6 +151,7 @@ export const VideoList = ({
         sortBy={sortBy}
         sortOrder={sortOrder}
         showFavorites={showFavorites}
+        showUnseen={showUnseen}
         onSortByChange={(value) => {
           setSortBy(value as "date" | "quality" | "size");
           setPage(1);
@@ -151,6 +164,11 @@ export const VideoList = ({
         }}
         onFavoritesChange={(value) => {
           setShowFavorites(value);
+          setPage(1);
+          updateUrl(1, sortBy, sortOrder);
+        }}
+        onUnseenChange={(value) => {
+          setShowUnseen(value);
           setPage(1);
           updateUrl(1, sortBy, sortOrder);
         }}
@@ -223,6 +241,14 @@ export const VideoList = ({
                 }
                 disabled={page === pagination.totalPages}
               />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink
+                href="#"
+                onClick={() => handlePageChange(pagination.totalPages)}
+              >
+                {pagination.totalPages}
+              </PaginationLink>
             </PaginationItem>
           </PaginationContent>
         </Pagination>

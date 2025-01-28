@@ -2,7 +2,10 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default [
-  { files: ["src/**/*.ts", "scripts/**/*.ts"], languageOptions: { sourceType: "commonjs" } },
+  {
+    files: ["src/**/*.ts", "scripts/**/*.ts"],
+    languageOptions: { sourceType: "commonjs" },
+  },
   { languageOptions: { globals: globals.browser } },
   ...tseslint.configs.recommended,
   {
@@ -105,5 +108,6 @@ export default [
       "no-restricted-modules": ["error", "fs", "cluster"],
       "@typescript-eslint/explicit-function-return-type": ["error"],
     },
+    extends: ["prettier"],
   },
 ];
