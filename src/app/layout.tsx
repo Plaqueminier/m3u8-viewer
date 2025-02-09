@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "./providers";
 import { ReactNode } from "react";
-import { Navbar } from "@/components/Navbar";
+import { NavbarWrapper } from "@/components/NavbarWrapper";
 
 export const metadata: Metadata = {
   title: "M3U8 Viewer",
@@ -29,7 +29,7 @@ export default function RootLayout({
           src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/hourglass.js"
         ></script>
         <Providers>
-          <Navbar />
+          <NavbarWrapper />
           {children}
         </Providers>
       </body>
