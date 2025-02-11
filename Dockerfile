@@ -1,5 +1,5 @@
 # Use an official Node runtime as the base image
-FROM node:22-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -15,6 +15,7 @@ COPY ./tsconfig.json .
 
 RUN npm install -g pnpm
 RUN pnpm install
+RUN pnpm approve-builds
 RUN pnpm run build
 
 EXPOSE 3000
