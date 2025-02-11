@@ -1,7 +1,6 @@
 import { ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { s3Client } from "../src/utils/s3Client";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
+import Database from "better-sqlite3";
 import dotenv from "dotenv";
 
 dotenv.config({ path: "../.env" });
@@ -57,12 +56,9 @@ async function fetchAllVideoNames(): Promise<Video[]> {
 }
 
 async function populateDatabase(): Promise<void> {
-  const db = await open({
-    filename: process.env.DATABASE_PATH!,
-    driver: sqlite3.Database,
-  });
+  const db = new Database(process.env.DATABASE_PATH!);
 
-  await db.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS videos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -76,21 +72,17 @@ async function populateDatabase(): Promise<void> {
 
   const videos = await fetchAllVideoNames();
 
-  const stmt = await db.prepare(
+  const stmt = db.prepare(
     "INSERT OR REPLACE INTO videos (name, key, size, lastModified) VALUES (?, ?, ?, ?)"
   );
 
-  for (const video of videos) {
-    await stmt.run(
-      video.name,
-      video.key,
-      video.size,
-      video.lastModified.getTime()
-    );
-  }
+  db.transaction(() => {
+    for (const video of videos) {
+      stmt.run(video.name, video.key, video.size, video.lastModified.getTime());
+    }
+  })();
 
-  await stmt.finalize();
-  await db.close();
+  db.close();
 
   // eslint-disable-next-line no-console
   console.log(`Populated database with ${videos.length} videos.`);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDbConnection } from "../../utils";
+import { getDb } from "../../utils";
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -9,9 +9,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Key is required" }, { status: 400 });
     }
 
-    const db = await getDbConnection();
-    await db.run("UPDATE videos SET seen = DATETIME('now') WHERE key = ?", key);
-    await db.close();
+    const db = getDb();
+    db.prepare("UPDATE videos SET seen = DATETIME('now') WHERE key = ?").run(key);
 
     return NextResponse.json({ success: true });
   } catch (error) {

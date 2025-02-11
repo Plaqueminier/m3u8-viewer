@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/utils/auth";
-import { getDbConnection } from "../utils";
+import { getDb } from "../utils";
+
+interface VideoData {
+  favorite: number;
+}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const authResponse = verifyAuth();
@@ -18,24 +22,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const db = await getDbConnection();
-    const video = await db.get(
-      "SELECT favorite FROM videos WHERE key = ?",
-      key
-    );
+    const db = getDb();
+    const video = db.prepare(
+      "SELECT favorite FROM videos WHERE key = ?"
+    ).get(key) as VideoData | undefined;
 
     if (!video) {
-      await db.close();
       return NextResponse.json({ error: "Video not found" }, { status: 404 });
     }
 
     const newFavoriteStatus = !video.favorite;
-    await db.run(
-      "UPDATE videos SET favorite = ? WHERE key = ?",
-      newFavoriteStatus ? 1 : 0,
-      key
-    );
-    await db.close();
+    db.prepare(
+      "UPDATE videos SET favorite = ? WHERE key = ?"
+    ).run(newFavoriteStatus ? 1 : 0, key);
 
     return NextResponse.json({ favorite: newFavoriteStatus });
   } catch (error) {

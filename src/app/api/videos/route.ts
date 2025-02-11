@@ -3,8 +3,7 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { verifyAuth } from "@/utils/auth";
-import { Database, open } from "sqlite";
-import sqlite3 from "sqlite3";
+import { getDb } from "../utils";
 import { format } from "date-fns";
 
 const VIDEOS_PER_PAGE = 12;
@@ -15,27 +14,20 @@ interface Video {
   date: string;
   key: string;
   size: number;
-  lastModified: Date;
-  favorite: boolean;
+  lastModified: number;
+  favorite: number;
   prediction: string;
 }
 
-function getDbConnection(): Promise<Database> {
-  return open({
-    filename: process.env.DATABASE_PATH!,
-    driver: sqlite3.Database,
-  });
-}
-
-async function fetchVideosFromDb(
+function fetchVideosFromDb(
   modelName: string | null,
   page: number,
   isFavorites: boolean,
   showUnseen: boolean,
   sortBy: "date" | "quality" | "size" = "date",
   sortOrder: "asc" | "desc" = "desc"
-): Promise<{ videos: Video[]; totalCount: number }> {
-  const db = await getDbConnection();
+): { videos: Video[]; totalCount: number } {
+  const db = getDb();
 
   let query = "SELECT * FROM videos";
   let countQuery = "SELECT COUNT(*) as count FROM videos";
@@ -83,15 +75,16 @@ async function fetchVideosFromDb(
   query += " LIMIT ? OFFSET ?";
   params.push(VIDEOS_PER_PAGE, (page - 1) * VIDEOS_PER_PAGE);
 
-  const videos = await db.all(query, ...params);
-  const [{ count }] = await db.all(countQuery, ...params.slice(0, -2));
+  const stmt = db.prepare(query);
+  const countStmt = db.prepare(countQuery);
 
-  await db.close();
+  const videos = stmt.all(...params) as Video[];
+  const [{ count }] = countStmt.all(...params.slice(0, -2)) as [{ count: number }];
 
   return {
     videos: videos.map((v) => ({
       ...v,
-      lastModified: new Date(v.lastModified),
+      lastModified: v.lastModified,
     })),
     totalCount: count,
   };
@@ -116,7 +109,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const sortOrder = (searchParams.get("sortOrder") || "desc") as "asc" | "desc";
 
   try {
-    const { videos, totalCount } = await fetchVideosFromDb(
+    const { videos, totalCount } = fetchVideosFromDb(
       modelName,
       page,
       isFavorites,
@@ -168,7 +161,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           date,
           previewPresignedUrl,
           fullVideoPresignedUrl,
-          favorite: video.favorite,
+          favorite: video.favorite === 1,
           prediction: video.prediction,
         };
       })

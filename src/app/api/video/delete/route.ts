@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
-import { getDbConnection } from "../../utils";
+import { getDb } from "../../utils";
 
 function getPreviewPrefix(key: string): string {
   // Extract the filename without the path
@@ -52,10 +52,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
-    // Delete from SQLite
-    const db = await getDbConnection();
-    await db.run("DELETE FROM videos WHERE key = ?", key);
-    await db.close();
+    const db = getDb();
+    db.prepare("DELETE FROM videos WHERE key = ?").run(key);
 
     return NextResponse.json({ success: true });
   } catch (error) {

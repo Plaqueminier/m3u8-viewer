@@ -3,14 +3,11 @@ import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { verifyAuth } from "@/utils/auth";
-import { Database, open } from "sqlite";
-import sqlite3 from "sqlite3";
+import { getDb } from "../utils";
 
-function getDbConnection(): Promise<Database> {
-  return open({
-    filename: process.env.DATABASE_PATH!,
-    driver: sqlite3.Database,
-  });
+interface VideoData {
+  favorite: number;
+  prediction: string;
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -46,12 +43,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       expiresIn: 3600,
     });
 
-    const db = await getDbConnection();
-    const videoData = await db.get(
-      "SELECT favorite, prediction FROM videos WHERE key = ?",
-      videoKey
-    );
-    await db.close();
+    const db = getDb();
+    const videoData = db.prepare(
+      "SELECT favorite, prediction FROM videos WHERE key = ?"
+    ).get(videoKey) as VideoData | undefined;
 
     const nameParts = videoKey
       .substring(videoKey.lastIndexOf("/") + 1)
@@ -65,7 +60,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       date: headResponse.LastModified?.toISOString().split("T")[0] || "Unknown",
       fileSize: formatFileSize(headResponse.ContentLength || 0),
       presignedUrl,
-      favorite: videoData?.favorite || false,
+      favorite: videoData?.favorite === 1,
       prediction: videoData?.prediction || "0".repeat(100)
     });
   } catch (error) {

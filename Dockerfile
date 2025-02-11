@@ -1,8 +1,5 @@
 # Use an official Node runtime as the base image
-FROM node:20-alpine
-
-# Install build dependencies
-RUN apk add --no-cache python3 make g++ sqlite-dev
+FROM node:22-alpine
 
 WORKDIR /app
 
