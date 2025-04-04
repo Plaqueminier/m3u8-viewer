@@ -1,5 +1,7 @@
 # Use an official Node runtime as the base image
-FROM node:20-alpine
+FROM node:22-alpine
+
+RUN apk add --no-cache python3 make g++ sqlite-dev
 
 WORKDIR /app
 
@@ -15,6 +17,7 @@ COPY ./tsconfig.json .
 
 RUN npm install -g pnpm
 RUN pnpm install
+RUN cd node_modules/better-sqlite3 && pnpm build-release
 RUN pnpm approve-builds
 RUN pnpm run build
 
