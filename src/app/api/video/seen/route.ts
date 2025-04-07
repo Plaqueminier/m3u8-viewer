@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "../../utils";
+import { closeDb, getDb } from "../../utils";
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -12,8 +12,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     const db = getDb();
     db.prepare("UPDATE videos SET seen = DATETIME('now') WHERE key = ?").run(key);
 
+    closeDb();
     return NextResponse.json({ success: true });
   } catch (error) {
+    closeDb();
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(

@@ -3,7 +3,7 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { verifyAuth } from "@/utils/auth";
-import { getDb } from "../utils";
+import { closeDb, getDb } from "../utils";
 import { format } from "date-fns";
 
 const VIDEOS_PER_PAGE = 12;
@@ -167,6 +167,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       })
     );
 
+    closeDb();
     return NextResponse.json({
       videos: videosWithUrls,
       pagination: {
@@ -176,6 +177,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
     });
   } catch (error) {
+    closeDb();
     // eslint-disable-next-line no-console
     console.error("Error listing videos:", error);
     return NextResponse.json(

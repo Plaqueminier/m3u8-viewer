@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
-import { getDb } from "../../utils";
+import { closeDb, getDb } from "../../utils";
 
 function getPreviewPrefix(key: string): string {
   // Extract the filename without the path
@@ -54,9 +54,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const db = getDb();
     db.prepare("DELETE FROM videos WHERE key = ?").run(key);
-
+    closeDb();
     return NextResponse.json({ success: true });
   } catch (error) {
+    closeDb();
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(

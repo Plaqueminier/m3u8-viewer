@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/utils/auth";
-import { getDb } from "../utils";
+import { closeDb, getDb } from "../utils";
 
 interface VideoData {
   favorite: number;
@@ -36,8 +36,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       "UPDATE videos SET favorite = ? WHERE key = ?"
     ).run(newFavoriteStatus ? 1 : 0, key);
 
+    closeDb();
     return NextResponse.json({ favorite: newFavoriteStatus });
   } catch (error) {
+    closeDb();
     // eslint-disable-next-line no-console
     console.error("Error updating favorite status:", error);
     return NextResponse.json(

@@ -3,7 +3,7 @@ import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/utils/s3Client";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { verifyAuth } from "@/utils/auth";
-import { getDb } from "../utils";
+import { closeDb, getDb } from "../utils";
 
 interface VideoData {
   favorite: number;
@@ -54,6 +54,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const username = nameParts[0].replace(/_/g, " ");
     const firstTimestamp = `${nameParts[1]}-${nameParts[2]}-${nameParts[3]}_${nameParts[4]}-${nameParts[5]}`;
 
+    closeDb();
     return NextResponse.json({
       key: videoKey,
       title: `${username} ${firstTimestamp}`,
@@ -64,6 +65,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       prediction: videoData?.prediction || "0".repeat(100)
     });
   } catch (error) {
+    closeDb();
     // eslint-disable-next-line no-console
     console.error("Error retrieving video data:", error);
     return NextResponse.json(

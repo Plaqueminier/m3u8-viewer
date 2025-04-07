@@ -8,7 +8,6 @@ export function getDb(): DatabaseType {
     db = new Database(process.env.DATABASE_PATH!);
     // Enable foreign keys and WAL mode for better performance
     db.pragma('foreign_keys = ON');
-    db.pragma('journal_mode = WAL');
   }
   return db;
 }
